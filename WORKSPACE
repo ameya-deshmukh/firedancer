@@ -134,13 +134,7 @@ register_toolchains("//bazel/toolchains:x86_64_linux_llvm")
 # Core C dependencies                                                          #
 ################################################################################
 
-http_archive(
-    name = "numa",
-    build_file = "@//:third_party/numa.BUILD",
-    sha256 = "1508bb02f56f1b9376243980ba96291856ba083e7a3480fdcb0fbf11ff01d6fa",
-    strip_prefix = "numactl-2.0.15",
-    url = "https://github.com/numactl/numactl/archive/refs/tags/v2.0.15.tar.gz",
-)
+# Add C/C++ libraries here
 
 ################################################################################
 # Rust                                                                         #

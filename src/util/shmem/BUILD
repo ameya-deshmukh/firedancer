@@ -12,12 +12,16 @@ fd_cc_library(
         "fd_shmem.h",
         "fd_shmem_private.h",
     ],
+    textual_hdrs = select({
+        "@platforms//os:linux": ["fd_numa_linux.c"],
+        "//conditions:default": ["fd_numa_stub.c"],
+    }),
     deps = [
+        "//src/util:base_lib",
         "//src/util/cstr",
         "//src/util/env",
         "//src/util/log",
         "//src/util/tmpl",
-        "@numa//:libnuma_headers",
     ],
 )
 
@@ -31,5 +35,15 @@ fd_cc_binary(
 fd_cc_test(
     srcs = ["test_shmem.c"],
     tags = ["manual"],
+    deps = ["//src/util"],
+)
+
+fd_cc_test(
+    name = "test_numa",
+    srcs = ["test_numa.c"],
+    textual_hdrs = select({
+        "@platforms//os:linux": ["test_numa_linux.c"],
+        "//conditions:default": [],
+    }),
     deps = ["//src/util"],
 )

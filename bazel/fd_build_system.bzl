@@ -46,9 +46,9 @@ def fd_cc_binary(
     __enhance_kwargs(kwargs, "linkopts", [], lambda x: fd_linkopts() + x)
 
     # Helper to include arbitrary files in build tree
-    if len(compile_data) > 0:
+    if type(compile_data) == "select" or len(compile_data) > 0:
         __enhance_kwargs(kwargs, "deps", [], lambda x: x + __cc_blob_helper(name, "compile_data", compile_data))
-    if len(textual_hdrs) > 0:
+    if type(textual_hdrs) == "select" or len(textual_hdrs) > 0:
         __enhance_kwargs(kwargs, "deps", [], lambda x: x + __cc_blob_helper(name, "textual_hdrs", textual_hdrs))
 
     native.cc_binary(name = name, **kwargs)
@@ -143,9 +143,9 @@ def fd_cc_test(
     }, **x))
 
     # Helper to include arbitrary files in build tree
-    if len(compile_data) > 0:
+    if type(compile_data) == "select" or len(compile_data) > 0:
         __enhance_kwargs(kwargs, "deps", [], lambda x: x + __cc_blob_helper(name, "compile_data", compile_data))
-    if len(textual_hdrs) > 0:
+    if type(textual_hdrs) == "select" or len(textual_hdrs) > 0:
         __enhance_kwargs(kwargs, "deps", [], lambda x: x + __cc_blob_helper(name, "textual_hdrs", textual_hdrs))
 
     native.cc_test(
