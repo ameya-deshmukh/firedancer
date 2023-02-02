@@ -18,13 +18,6 @@
 #define PRQ_TIMEOUT_T ulong
 #include "../../util/tmpl/fd_prq.c"
 
-#if 0
-#define DEBUG(...) __VA_ARGS__ fflush( stdout ); fflush( stderr );
-#else
-#define DEBUG(...)
-#endif
-
-
 /* TODO improve this map */
 /* map of encryption levels to packet number space */
 static uchar el2pn_map[] = { 0, 2, 1, 2 };
@@ -812,7 +805,7 @@ fd_quic_handle_v1_initial( fd_quic_t *               quic,
 
     /* check current number of connections */
     if( quic->cur_num_conns == quic->max_concur_conns ) {
-      DEBUG( printf( "fd_quic_handle_v1_initial: new connection would exceed max_concur_conns\n" ); )
+      FD_LOG_DEBUG(( "fd_quic_handle_v1_initial: new connection would exceed max_concur_conns" ));
       return FD_QUIC_PARSE_FAIL;
     }
 
@@ -821,7 +814,7 @@ fd_quic_handle_v1_initial( fd_quic_t *               quic,
     if( conn == NULL ) { /* no free connections */
       /* TODO send failure back to origin? */
 
-      DEBUG( printf( "fd_quic_handle_v1_initial: no connections in free list\n" ); )
+      FD_LOG_DEBUG(( "fd_quic_handle_v1_initial: no connections in free list" ));
       return FD_QUIC_PARSE_FAIL;
     }
 
@@ -954,10 +947,10 @@ fd_quic_handle_v1_initial( fd_quic_t *               quic,
     quic->transport_params.initial_source_connection_id_present = 1;
     quic->transport_params.initial_source_connection_id_len     = pkt->long_hdr->src_conn_id_len;
 
-    DEBUG(
-    fd_quic_dump_transport_params( &quic->transport_params, stdout );
-    fflush( stdout );
-    )
+    //DEBUG(
+    //fd_quic_dump_transport_params( &quic->transport_params, stdout );
+    //fflush( stdout );
+    //)
 
     /* flow control params */
     conn->rx_max_data = quic->initial_max_data; /* this is what we advertize initially */
@@ -997,7 +990,7 @@ fd_quic_handle_v1_initial( fd_quic_t *               quic,
                                     transport_params_raw,
                                     transport_params_raw_sz );
     if( !tls_hs ) {
-      DEBUG( printf( "fd_quic_handle_v1_initial: fd_quic_tls_hs_new failed\n" ); )
+      FD_LOG_DEBUG(( "fd_quic_handle_v1_initial: fd_quic_tls_hs_new failed" ));
       return FD_QUIC_PARSE_FAIL;
     }
     conn->tls_hs = tls_hs;
@@ -1016,7 +1009,7 @@ fd_quic_handle_v1_initial( fd_quic_t *               quic,
                                     orig_conn_id.conn_id, conn_id->sz,
                                     suite->hash ) != FD_QUIC_SUCCESS ) {
       /* remove connection from map, and insert into free list */
-      DEBUG( fprintf( stderr, "%s: fd_quic_gen_initial_secret failed\n", __func__ ); )
+      FD_LOG_DEBUG(( "fd_quic_gen_initial_secret failed" ));
       if( insert_entry ) {
         fd_quic_conn_map_remove( quic->conn_map, insert_entry );
         conn->next  = quic->conns;
@@ -1029,7 +1022,7 @@ fd_quic_handle_v1_initial( fd_quic_t *               quic,
                              (int)enc_level, /* generate initial secrets */
                              suite->hash ) != FD_QUIC_SUCCESS ) {
       /* remove connection from map, and insert into free list */
-      DEBUG( fprintf( stderr, "%s: fd_quic_gen_secrets failed\n", __func__ ); )
+      FD_LOG_DEBUG(( "fd_quic_gen_secrets failed" ));
       if( insert_entry ) {
         fd_quic_conn_map_remove( quic->conn_map, insert_entry );
         conn->next  = quic->conns;
@@ -1047,7 +1040,7 @@ fd_quic_handle_v1_initial( fd_quic_t *               quic,
                           conn->secrets.secret_sz[enc_level][0] )
           != FD_QUIC_SUCCESS ) {
       /* remove connection from map, and insert into free list */
-      DEBUG( fprintf( stderr, "%s: fd_quic_gen_keys failed\n", __func__ ); )
+      FD_LOG_DEBUG(( "fd_quic_gen_keys failed" ));
       if( insert_entry ) {
         fd_quic_conn_map_remove( quic->conn_map, insert_entry );
         conn->next  = quic->conns;
@@ -1064,7 +1057,7 @@ fd_quic_handle_v1_initial( fd_quic_t *               quic,
                           conn->secrets.secret_sz[enc_level][1] )
           != FD_QUIC_SUCCESS ) {
       /* remove connection from map, and insert into free list */
-      DEBUG( fprintf( stderr, "%s: fd_quic_gen_keys failed\n", __func__ ); )
+      FD_LOG_DEBUG(( "fd_quic_gen_keys failed" ));
       if( insert_entry ) {
         fd_quic_conn_map_remove( quic->conn_map, insert_entry );
         conn->next  = quic->conns;
@@ -1112,7 +1105,7 @@ fd_quic_handle_v1_initial( fd_quic_t *               quic,
                                     suite,
                                     &conn->keys[enc_level][!server] ) != FD_QUIC_SUCCESS ) {
       /* remove connection from map, and insert into free list */
-      DEBUG( fprintf( stderr, "%s: fd_quic_crypto_decrypt_hdr failed\n", __func__ ); )
+      FD_LOG_DEBUG(( "fd_quic_crypto_decrypt_hdr failed" ));
       if( insert_entry ) {
         fd_quic_conn_map_remove( quic->conn_map, insert_entry );
         conn->next  = quic->conns;
@@ -1131,10 +1124,7 @@ fd_quic_handle_v1_initial( fd_quic_t *               quic,
     /* now we have decrypted packet number */
     /* TODO packet number processing */
     pkt_number = fd_quic_parse_bits( dec_hdr + pn_offset, 0, 8u * pkt_number_sz );
-    DEBUG(
-      printf( "pkt_number: %lu\n", (uint long)pkt_number );
-      fflush( stdout );
-    )
+    FD_LOG_DEBUG(( "pkt_number: %lu", pkt_number ));
 
     /* packet number space */
     uint pn_space = fd_quic_enc_level_to_pn_space( enc_level );
@@ -1163,7 +1153,7 @@ fd_quic_handle_v1_initial( fd_quic_t *               quic,
                                 suite,
                                 &conn->keys[enc_level][!server] ) != FD_QUIC_SUCCESS ) {
       /* remove connection from map, and insert into free list */
-      DEBUG( fprintf( stderr, "%s: fd_quic_crypto_decrypt failed\n", __func__ ); )
+      FD_LOG_DEBUG(( "fd_quic_crypto_decrypt failed" ));
       if( insert_entry ) {
         fd_quic_conn_map_remove( quic->conn_map, insert_entry );
         conn->next  = quic->conns;
@@ -1201,7 +1191,7 @@ fd_quic_handle_v1_initial( fd_quic_t *               quic,
     frame_sz  -= rc;
   }
 
-  DEBUG( printf( "fd_quic_handle_v1_initial: new connection success!\n" ); )
+  FD_LOG_DEBUG(( "fd_quic_handle_v1_initial: new connection success!" ));
 
   /* return number of bytes consumed */
   return tot_sz;
@@ -1220,7 +1210,7 @@ fd_quic_handle_v1_handshake(
   (void)conn;
   (void)cur_ptr;
   (void)cur_sz;
-  DEBUG( printf( "%s START\n", __func__ ); )
+  FD_LOG_DEBUG(( "START" ));
 
   if( !conn ) {
     FD_LOG_WARNING(( "%s called with no connection", __func__ ));
@@ -1245,7 +1235,7 @@ fd_quic_handle_v1_handshake(
   /* fetch TLS handshake */
   fd_quic_tls_hs_t * tls_hs = conn->tls_hs;
   if( FD_UNLIKELY( !tls_hs ) ) {
-    DEBUG( printf( "fd_quic_handle_v1_handshake: no tls handshake\n" ); )
+    FD_LOG_DEBUG(( "fd_quic_handle_v1_handshake: no tls handshake" ));
     return FD_QUIC_PARSE_FAIL;
   }
 
@@ -1300,7 +1290,7 @@ fd_quic_handle_v1_handshake(
                                     suite,
                                     &conn->keys[enc_level][!server] ) != FD_QUIC_SUCCESS ) {
       /* remove connection from map, and insert into free list */
-      DEBUG( fprintf( stderr, "%s: fd_quic_crypto_decrypt_hdr failed\n", __func__ ); )
+      FD_LOG_DEBUG(( "fd_quic_crypto_decrypt_hdr failed" ));
       return FD_QUIC_PARSE_FAIL;
     }
 
@@ -1314,10 +1304,7 @@ fd_quic_handle_v1_handshake(
     /* now we have decrypted packet number */
     /* TODO packet number processing */
     pkt_number = fd_quic_parse_bits( dec_hdr + pn_offset, 0, 8u * pkt_number_sz );
-    DEBUG(
-      printf( "pkt_number: %lu\n", (ulong)pkt_number );
-      fflush( stdout );
-    )
+    FD_LOG_DEBUG(( "pkt_number: %lu", pkt_number ));
 
     /* packet number space */
     uint pn_space = fd_quic_enc_level_to_pn_space( enc_level );
@@ -1328,10 +1315,7 @@ fd_quic_handle_v1_handshake(
     /* packet number must be greater than the last processed
        on a new connection, the minimum allowed is set to zero */
     if( FD_UNLIKELY( pkt_number < conn->exp_pkt_number[0] ) ) {
-      DEBUG(
-          printf( "%s - packet number less than expected. Discarding\n", __func__ );
-          fflush( stdout );
-          )
+      FD_LOG_DEBUG(( "packet number less than expected. Discarding" ));
 
       /* packet already processed or abandoned, simply discard */
       return tot_sz; /* return bytes to allow for more packets to be processed */
@@ -1351,7 +1335,7 @@ fd_quic_handle_v1_handshake(
                                 suite,
                                 &conn->keys[enc_level][!server] ) != FD_QUIC_SUCCESS ) {
       /* remove connection from map, and insert into free list */
-      DEBUG( fprintf( stderr, "%s: fd_quic_crypto_decrypt failed\n", __func__ ); )
+      FD_LOG_DEBUG(( "fd_quic_crypto_decrypt failed" ));
       return FD_QUIC_PARSE_FAIL;
     }
   }
@@ -1380,7 +1364,7 @@ fd_quic_handle_v1_retry( fd_quic_t * quic, fd_quic_conn_t * conn, fd_quic_pkt_t 
   (void)conn;
   (void)cur_ptr;
   (void)cur_sz;
-  DEBUG( printf( "%s STUB\n", __func__ ); )
+  FD_LOG_DEBUG(( "STUB" ));
   return 0;
 }
 
@@ -1391,7 +1375,7 @@ fd_quic_handle_v1_zero_rtt( fd_quic_t * quic, fd_quic_conn_t * conn, fd_quic_pkt
   (void)conn;
   (void)cur_ptr;
   (void)cur_sz;
-  DEBUG( printf( "%s STUB\n", __func__ ); )
+  FD_LOG_DEBUG(( "STUB" ));
   return 0;
 }
 
@@ -1411,14 +1395,14 @@ fd_quic_handle_v1_one_rtt( fd_quic_t * quic, fd_quic_conn_t * conn, fd_quic_pkt_
 
   ulong rc = fd_quic_decode_one_rtt( one_rtt, cur_ptr, cur_sz );
   if( rc == FD_QUIC_PARSE_FAIL ) {
-    DEBUG( printf( "%s : fd_quic_decode_one_rtt failed\n", __func__ ); )
+    FD_LOG_DEBUG(( "fd_quic_decode_one_rtt failed" ));
     return 0;
   }
 
-  DEBUG(
-    printf( "%s : dump:\n", __func__ );
-    fd_quic_dump_struct_one_rtt( one_rtt );
-  )
+  //DEBUG(
+  //  printf( "%s : dump:\n", __func__ );
+  //  fd_quic_dump_struct_one_rtt( one_rtt );
+  //)
 
   /* generate one_rtt secrets, keys etc */
 
@@ -1469,7 +1453,7 @@ fd_quic_handle_v1_one_rtt( fd_quic_t * quic, fd_quic_conn_t * conn, fd_quic_pkt_
                                     suite,
                                     &conn->keys[enc_level][!server] ) != FD_QUIC_SUCCESS ) {
       /* remove connection from map, and insert into free list */
-      DEBUG( fprintf( stderr, "%s: fd_quic_crypto_decrypt_hdr failed\n", __func__ ); )
+      FD_LOG_DEBUG(( "fd_quic_crypto_decrypt_hdr failed" ));
       return FD_QUIC_PARSE_FAIL;
     }
 
@@ -1483,10 +1467,7 @@ fd_quic_handle_v1_one_rtt( fd_quic_t * quic, fd_quic_conn_t * conn, fd_quic_pkt_
     /* now we have decrypted packet number */
     /* TODO packet number processing */
     pkt_number = fd_quic_parse_bits( dec_hdr + pn_offset, 0, 8u * pkt_number_sz );
-    DEBUG(
-      printf( "pkt_number: %lu\n", (uint long)pkt_number );
-      fflush( stdout );
-    )
+    FD_LOG_DEBUG(( "pkt_number: %lu", pkt_number ));
 
     /* packet number space */
     uint pn_space = fd_quic_enc_level_to_pn_space( enc_level );
@@ -1497,10 +1478,7 @@ fd_quic_handle_v1_one_rtt( fd_quic_t * quic, fd_quic_conn_t * conn, fd_quic_pkt_
     /* packet number must be greater than the last processed
        on a new connection, the minimum allowed is set to zero */
     if( FD_UNLIKELY( pkt_number < conn->exp_pkt_number[0] ) ) {
-      DEBUG(
-          printf( "%s - packet number less than expected. Discarding\n", __func__ );
-          fflush( stdout );
-          )
+      FD_LOG_DEBUG(( "packet number less than expected. Discarding" ));
 
       /* packet already processed or abandoned, simply discard */
       return tot_sz; /* return bytes to allow for more packets to be processed */
@@ -1520,7 +1498,7 @@ fd_quic_handle_v1_one_rtt( fd_quic_t * quic, fd_quic_conn_t * conn, fd_quic_pkt_
                                 suite,
                                 &conn->keys[enc_level][!server] ) != FD_QUIC_SUCCESS ) {
       /* remove connection from map, and insert into free list */
-      DEBUG( fprintf( stderr, "%s: fd_quic_crypto_decrypt failed\n", __func__ ); )
+      FD_LOG_DEBUG(( "fd_quic_crypto_decrypt failed" ));
       return FD_QUIC_PARSE_FAIL;
     }
   }
@@ -1778,7 +1756,7 @@ fd_quic_process_quic_packet_v1( fd_quic_t * quic, fd_quic_pkt_t * pkt, uchar con
     /* find connection id */
     entry = fd_quic_conn_map_query( quic->conn_map, &dst_conn_id );
     if( !entry ) {
-      DEBUG( printf( "%s : one_rtt failed: no connection found\n", __func__ ); )
+      FD_LOG_DEBUG(( "one_rtt failed: no connection found" ));
       return FD_QUIC_PARSE_FAIL;
     }
 
@@ -1829,7 +1807,7 @@ fd_quic_process_packet( fd_quic_t * quic, uchar const * data, ulong data_sz ) {
   /* TODO support for vlan? */
 
   if( pkt.eth->eth_type != 0x0800 ) {
-    DEBUG( printf( "Invalid ethertype: %4.4x\n", pkt.eth->eth_type ); )
+    FD_LOG_DEBUG(( "Invalid ethertype: %4.4x", pkt.eth->eth_type ));
     return;
   }
 
@@ -1845,7 +1823,7 @@ fd_quic_process_packet( fd_quic_t * quic, uchar const * data, ulong data_sz ) {
 
   /* check version, tot_len, protocol, checksum? */
   if( ( pkt.ipv4->version != 4 ) | ( pkt.ipv4->protocol != 17 ) ) {
-    DEBUG( printf( "failed: version=%u protocol=%u\n", pkt.ipv4->version, pkt.ipv4->protocol ); )
+    FD_LOG_DEBUG(( "failed: version=%u protocol=%u", pkt.ipv4->version, pkt.ipv4->protocol ));
     return;
   }
 
@@ -1866,12 +1844,12 @@ fd_quic_process_packet( fd_quic_t * quic, uchar const * data, ulong data_sz ) {
   /* cur_ptr[0..cur_sz-1] should be payload */
 
   /* debugging */
-  DEBUG(
-      printf( "fd_quic_process_packet: received packet with headers:\n" );
-      fd_quic_dump_struct_eth( pkt.eth );
-      fd_quic_dump_struct_ipv4( pkt.ipv4 );
-      fd_quic_dump_struct_udp( pkt.udp );
-      printf( "\n" ); )
+  //DEBUG(
+  //    printf( "fd_quic_process_packet: received packet with headers:\n" );
+  //    fd_quic_dump_struct_eth( pkt.eth );
+  //    fd_quic_dump_struct_ipv4( pkt.ipv4 );
+  //    fd_quic_dump_struct_udp( pkt.udp );
+  //    printf( "" ));
   /* end debugging */
 
   /* filter */
@@ -1973,7 +1951,7 @@ fd_quic_process_packet( fd_quic_t * quic, uchar const * data, ulong data_sz ) {
     /* find connection id */
     fd_quic_conn_entry_t * entry = fd_quic_conn_map_query( quic->conn_map, &dst_conn_id );
     if( !entry ) {
-      DEBUG( printf( "%s : one_rtt failed: no connection found\n", __func__ ); )
+      FD_LOG_DEBUG(( "one_rtt failed: no connection found" ));
       /* silently ignore */
       return;
     }
@@ -2014,7 +1992,7 @@ fd_quic_tls_cb_client_hello( fd_quic_tls_hs_t * hs,
                              void *             context ) {
   (void)hs;
   (void)context;
-  DEBUG( printf( "TLS CALLBACK: %s\n", __func__ ); )
+  FD_LOG_DEBUG(( "TLS CALLBACK" ));
   return FD_QUIC_TLS_SUCCESS; /* accept everything */
 }
 
@@ -2023,15 +2001,14 @@ fd_quic_tls_cb_alert( fd_quic_tls_hs_t * hs,
                       void *             context,
                       int                alert ) {
   (void)hs;
-  (void)context;
   (void)alert;
-  DEBUG( fd_quic_conn_t * conn = (fd_quic_conn_t*)context;
-         printf( "TLS : %s\n", conn->server ? "SERVER" : "CLIENT"  );
-         printf( "TLS alert: %d\n", alert );
-         printf( "TLS CALLBACK: %s\n", __func__ );
-         printf( "TLS alert: %s %s\n",
-                   SSL_alert_type_string_long( alert ),
-                   SSL_alert_desc_string_long( alert ) ); )
+
+  fd_quic_conn_t * conn = (fd_quic_conn_t*)context;
+  FD_LOG_DEBUG(( "TLS: %s", conn->server ? "SERVER" : "CLIENT" ));
+  FD_LOG_DEBUG(( "TLS alert: %d", alert ));
+  FD_LOG_DEBUG(( "TLS CALLBACK: %s %s",
+                 SSL_alert_type_string_long( alert ),
+                 SSL_alert_desc_string_long( alert ) ));
 
   /* may use the following to retrieve alert information:
 
@@ -2048,21 +2025,21 @@ fd_quic_tls_cb_secret( fd_quic_tls_hs_t *           hs,
   (void)hs;
   (void)context;
   (void)secret;
-  DEBUG( printf( "TLS CALLBACK: %s\n", __func__ ); )
+  FD_LOG_DEBUG(( "TLS CALLBACK" ));
 
   fd_quic_conn_t * conn   = (fd_quic_conn_t*)context;
   int              server = conn->server;
-  DEBUG( printf( "TLS %s\n", server ? "server" : "client" ); )
+  FD_LOG_DEBUG(( "TLS %s", server ? "server" : "client" ));
 
   /* look up suite */
   /* set secrets */
   if( FD_UNLIKELY( secret->enc_level < 0 || secret->enc_level >= FD_QUIC_NUM_ENC_LEVELS ) ) {
-    FD_LOG_WARNING(( "%s : callback with invalid encryption level", __func__ ));
+    FD_LOG_WARNING(( "callback with invalid encryption level" ));
     return;
   }
 
   if( FD_UNLIKELY( secret->secret_len > FD_QUIC_MAX_SECRET_SZ ) ) {
-    FD_LOG_WARNING(( "%s : callback with invalid secret length", __func__ ));
+    FD_LOG_WARNING(( "callback with invalid secret length" ));
     return;
   }
 
@@ -2074,18 +2051,18 @@ fd_quic_tls_cb_secret( fd_quic_tls_hs_t *           hs,
   crypto_secret->secret_sz[enc_level][0] = secret_sz;
   crypto_secret->secret_sz[enc_level][1] = secret_sz;
 
-  DEBUG(
-      printf( "%s read  secret - enc_level: %d  secret: ", conn->server ? "SERVER" : "CLIENT", enc_level );
-      for( ulong j = 0; j < secret_sz; ++j ) {
-        printf( "%2.2x", (uint)secret->read_secret[j] );
-      }
-      printf( "\n" );
-      printf( "%s write secret - enc_level: %d  secret: ", conn->server ? "SERVER" : "CLIENT", enc_level );
-      for( ulong j = 0; j < secret_sz; ++j ) {
-        printf( "%2.2x", (uint)secret->write_secret[j] );
-      }
-      printf( "\n" );
-    )
+  //DEBUG(
+  //    printf( "%s read  secret - enc_level: %d  secret: ", conn->server ? "SERVER" : "CLIENT", enc_level );
+  //    for( ulong j = 0; j < secret_sz; ++j ) {
+  //      printf( "%2.2x", (uint)secret->read_secret[j] );
+  //    }
+  //    printf( "\n" );
+  //    printf( "%s write secret - enc_level: %d  secret: ", conn->server ? "SERVER" : "CLIENT", enc_level );
+  //    for( ulong j = 0; j < secret_sz; ++j ) {
+  //      printf( "%2.2x", (uint)secret->write_secret[j] );
+  //    }
+  //    printf( "\n" );
+  //  )
 
   fd_memcpy( &crypto_secret->secret[enc_level][!server][0], secret->read_secret,  secret_sz );
   fd_memcpy( &crypto_secret->secret[enc_level][ server][0], secret->write_secret, secret_sz );
@@ -2095,10 +2072,8 @@ fd_quic_tls_cb_secret( fd_quic_tls_hs_t *           hs,
   uchar minor = (uchar)( suite_id );
   int suite_idx = fd_quic_crypto_lookup_suite( major, minor );
 
-  DEBUG(
-      printf( "suite: majmin: %u %u  suite_id: %x  suite_idx: %u\n",
-        (uint)major, (uint)minor, (uint)suite_id, (uint)suite_idx );
-      )
+  FD_LOG_DEBUG(( "suite: majmin: %u %u  suite_id: %x  suite_idx: %u",
+                 (uint)major, (uint)minor, (uint)suite_id, (uint)suite_idx ));
 
   if( suite_idx >= 0 ) {
     fd_quic_crypto_suite_t * suite = conn->suites[enc_level] = &conn->quic->crypto_ctx->suites[suite_idx];
@@ -2112,7 +2087,7 @@ fd_quic_tls_cb_secret( fd_quic_tls_hs_t *           hs,
                           conn->secrets.secret_sz[enc_level][0] )
           != FD_QUIC_SUCCESS ) {
       /* remove connection from map, and insert into free list */
-      FD_LOG_WARNING(( "%s: fd_quic_gen_keys failed on client\n", __func__ ));
+      FD_LOG_WARNING(( "fd_quic_gen_keys failed on client" ));
     }
 
     /* gen initial keys */
@@ -2124,7 +2099,7 @@ fd_quic_tls_cb_secret( fd_quic_tls_hs_t *           hs,
                           conn->secrets.secret_sz[enc_level][1] )
           != FD_QUIC_SUCCESS ) {
       /* remove connection from map, and insert into free list */
-      FD_LOG_WARNING(( "%s: fd_quic_gen_keys failed on server\n", __func__ ));
+      FD_LOG_WARNING(( "fd_quic_gen_keys failed on server" ));
     }
 
   }
@@ -2203,33 +2178,33 @@ fd_quic_frame_handle_crypto_frame( void *                   vp_context,
   /* copy the context locally */
   fd_quic_frame_context_t context = *(fd_quic_frame_context_t*)vp_context;
 
-  DEBUG(
-    printf( "CRYPTO\n" );
-    fd_quic_dump_struct_crypto_frame( crypto );
+  //DEBUG(
+  //  printf( "CRYPTO\n" );
+  //  fd_quic_dump_struct_crypto_frame( crypto );
+  //
+  //  printf( "enc_level: %d\n", (int)context.pkt->enc_level );
+  //  )
 
-    printf( "enc_level: %d\n", (int)context.pkt->enc_level );
-    )
-
-  DEBUG(
-      printf( "%s : %s calling fd_quic_tls_provide_data with %ld bytes, enc_level: %d\n",
-        __func__,
-        ( context.conn->server ? "SERVER" : "CLIENT" ),
-        (long)crypto->length,
-        (int)context.pkt->enc_level );
-      for( ulong j = 0; j < crypto->length; ++j ) {
-        printf( "%2.2x ", crypto->crypto_data[j] );
-      }
-      printf( "\n" );
-    )
+  //DEBUG(
+  //    printf( "%s : %s calling fd_quic_tls_provide_data with %ld bytes, enc_level: %d\n",
+  //      __func__,
+  //      ( context.conn->server ? "SERVER" : "CLIENT" ),
+  //      (long)crypto->length,
+  //      (int)context.pkt->enc_level );
+  //    for( ulong j = 0; j < crypto->length; ++j ) {
+  //      printf( "%2.2x ", crypto->crypto_data[j] );
+  //    }
+  //    printf( "\n" );
+  //  )
 
   /* determine whether any of the data was already provided */
   fd_quic_conn_t * conn      = context.conn;
-  uint         enc_level = context.pkt->enc_level;
+  uint             enc_level = context.pkt->enc_level;
 
   /* offset expected */
-  ulong           exp_offset = conn->rx_crypto_offset[enc_level];
-  ulong           rcv_offset = crypto->offset;
-  ulong           rcv_sz     = crypto->length;
+  ulong exp_offset = conn->rx_crypto_offset[enc_level];
+  ulong rcv_offset = crypto->offset;
+  ulong rcv_sz     = crypto->length;
 
   /* do we have bytes we can use? */
   if( FD_LIKELY( rcv_offset <= exp_offset && rcv_offset + rcv_sz > exp_offset ) ) {
@@ -2252,9 +2227,7 @@ fd_quic_frame_handle_crypto_frame( void *                   vp_context,
 
     int process_rc = fd_quic_tls_process( conn->tls_hs );
     if( process_rc == FD_QUIC_TLS_FAILED ) {
-      DEBUG(
-        fprintf( stderr, "fd_quic_tls_process error at: %s %s %d\n", __func__, __FILE__, __LINE__ );
-      )
+      FD_LOG_DEBUG(( "fd_quic_tls_process error" ));
       /* if TLS fails, ABORT connection */
 
       /* if TLS returns an error, we present that as reason:
@@ -2342,19 +2315,19 @@ fd_quic_tx_buffered( fd_quic_t * quic, fd_quic_conn_t * conn ) {
   /* nothing to do */
   if( payload_sz <= 0 ) return 0;
 
-  DEBUG(
-      {
-        printf( "fd_quic_tx_buffered:\n" );
-        uchar const * end_ptr = conn->tx_ptr;
-        uchar const * cur_ptr = conn->tx_buf;
-        while( cur_ptr < end_ptr ) {
-          printf( "%2.2x ", (uint)*cur_ptr );
-          cur_ptr++;
-        }
-        printf( "\n" );
-        fflush( stdout );
-      }
-    )
+  //DEBUG(
+  //    {
+  //      printf( "fd_quic_tx_buffered:\n" );
+  //      uchar const * end_ptr = conn->tx_ptr;
+  //      uchar const * cur_ptr = conn->tx_buf;
+  //      while( cur_ptr < end_ptr ) {
+  //        printf( "%2.2x ", (uint)*cur_ptr );
+  //        cur_ptr++;
+  //      }
+  //      printf( "\n" );
+  //      fflush( stdout );
+  //    }
+  //  )
 
   ulong                 peer_idx   = conn->cur_peer_idx;
   fd_quic_endpoint_t *   peer       = &conn->peer[peer_idx];
@@ -2676,9 +2649,7 @@ fd_quic_conn_tx( fd_quic_t * quic, fd_quic_conn_t * conn ) {
     /* do we have space for pkt_meta? */
     fd_quic_pkt_meta_t * pm_new = conn->pkt_meta_free;
     if( FD_UNLIKELY( !pm_new ) ) {
-      DEBUG(
-          printf( "%s - packet metadata free list is empty\n", __func__ );
-          )
+      FD_LOG_DEBUG(( "packet metadata free list is empty" ));
       return;
     }
 
@@ -3170,25 +3141,25 @@ fd_quic_conn_tx( fd_quic_t * quic, fd_quic_conn_t * conn ) {
     pkt_meta.pn_space   = (uchar)pn_space;
     pkt_meta.enc_level  = (uchar)enc_level;
 
-    DEBUG( {
-        printf( "%u compare: %p vs %p\n", __LINE__, (void*)conn->pkt_meta_free, (void*)pm_new );
-        printf( "before. conn: %p\n", (void*)conn );
-        ulong _ = 0;
-        fd_quic_pkt_meta_t * _0 = conn->pkt_meta_free;
-        while( _0 ) { _++; _0 = _0->next; }
-        printf( "  count: %lu\n", (uint long)_ );
-        } )
+    //DEBUG( {
+    //    printf( "%u compare: %p vs %p\n", __LINE__, (void*)conn->pkt_meta_free, (void*)pm_new );
+    //    printf( "before. conn: %p\n", (void*)conn );
+    //    ulong _ = 0;
+    //    fd_quic_pkt_meta_t * _0 = conn->pkt_meta_free;
+    //    while( _0 ) { _++; _0 = _0->next; }
+    //    printf( "  count: %lu\n", (uint long)_ );
+    //    } )
 
     /* move the head of free list */
     conn->pkt_meta_free = pm_new->next;
 
-    DEBUG( {
-        printf( "after.. conn: %p\n", (void*)conn );
-        ulong _ = 0;
-        fd_quic_pkt_meta_t * _0 = conn->pkt_meta_free;
-        while( _0 ) { _++; _0 = _0->next; }
-        printf( "  count: %lu\n", (uint long)_ );
-        } )
+    //DEBUG( {
+    //    printf( "after.. conn: %p\n", (void*)conn );
+    //    ulong _ = 0;
+    //    fd_quic_pkt_meta_t * _0 = conn->pkt_meta_free;
+    //    while( _0 ) { _++; _0 = _0->next; }
+    //    printf( "  count: %lu\n", (uint long)_ );
+    //    } )
 
     /* store the metadata */
     *pm_new = pkt_meta;
@@ -3242,7 +3213,7 @@ fd_quic_conn_tx( fd_quic_t * quic, fd_quic_conn_t * conn ) {
     fd_quic_tx_buffered( quic, conn );
   }
 
-  DEBUG( printf( "done\n" ); )
+  FD_LOG_DEBUG(( "done" ));
 }
 
 
@@ -3375,10 +3346,8 @@ fd_quic_connect( fd_quic_t * quic,
                                                      dst_udp_port,
                                                      0 /*client*/ );
 
-  if( !conn ) {
-    DEBUG(
-        printf( "%s : fd_quic_create_connection failed\n", __func__ );
-        )
+  if( FD_UNLIKELY( !conn ) ) {
+    FD_LOG_DEBUG(( "fd_quic_create_connection failed" ));
     return NULL;
   }
 
@@ -3405,9 +3374,7 @@ fd_quic_connect( fd_quic_t * quic,
                                                   &quic->transport_params );
   /* probably means we don't have enough space for all the transport parameters */
   if( FD_UNLIKELY( tp_rc == FD_QUIC_ENCODE_FAIL ) ) {
-    DEBUG(
-        printf( "%s : fd_quic_encode_transport_params failed\n", __func__ );
-        )
+    FD_LOG_DEBUG(( "fd_quic_encode_transport_params failed" ));
 
     /* remote entry from map */
     fd_quic_conn_entry_t * entry = fd_quic_conn_map_query( quic->conn_map, &our_conn_id );
@@ -3432,7 +3399,7 @@ fd_quic_connect( fd_quic_t * quic,
                                   transport_params_raw,
                                   transport_params_raw_sz );
   if( !tls_hs ) {
-    DEBUG( printf( "%s : fd_quic_tls_hs_new failed\n", __func__ ); )
+    FD_LOG_DEBUG(( "fd_quic_tls_hs_new failed" ));
 
     /* remote entry from map */
     fd_quic_conn_entry_t * entry = fd_quic_conn_map_query( quic->conn_map, &our_conn_id );
@@ -3450,9 +3417,7 @@ fd_quic_connect( fd_quic_t * quic,
   /* run process tls immediately */
   int process_rc = fd_quic_tls_process( tls_hs );
   if( process_rc == FD_QUIC_TLS_FAILED ) {
-    DEBUG(
-      fprintf( stderr, "fd_quic_tls_process error at: %s %s %d\n", __func__, __FILE__, __LINE__ );
-    )
+    FD_LOG_DEBUG(( "fd_quic_tls_process error" ));
 
     /* We haven't sent any data to the peer yet,
        so simply clean up and fail */
@@ -3473,12 +3438,7 @@ fd_quic_connect( fd_quic_t * quic,
     return NULL;
   }
 
-  DEBUG(
-      fd_quic_tls_hs_data_t const * hs_data = fd_quic_tls_get_hs_data( tls_hs, 0 );
-      printf( "hs_data @ enc_level 0: %p\n", (void*)hs_data );
-      fflush( stdout );
-      fflush( stdout );
-      )
+  FD_LOG_DEBUG(( "hs_data @ enc_level 0: %p", (void *)fd_quic_tls_get_hs_data( tls_hs, 0 ) ));
 
   conn->tls_hs = tls_hs;
 
@@ -3493,14 +3453,14 @@ fd_quic_connect( fd_quic_t * quic,
      from rfc:
      initial_salt = 0x38762cf7f55934b34d179ae6a4c80cadccbb7f0a */
   uchar const * initial_salt    = FD_QUIC_CRYPTO_V1_INITIAL_SALT;
-  ulong        initial_salt_sz = FD_QUIC_CRYPTO_V1_INITIAL_SALT_SZ;
+  ulong         initial_salt_sz = FD_QUIC_CRYPTO_V1_INITIAL_SALT_SZ;
 
   if( fd_quic_gen_initial_secret( &conn->secrets,
                                   initial_salt,     initial_salt_sz,
                                   peer_conn_id.conn_id, peer_conn_id.sz,
                                   suite->hash ) != FD_QUIC_SUCCESS ) {
     /* remove connection from map, and insert into free list */
-    DEBUG( fprintf( stderr, "%s: fd_quic_gen_initial_secret failed\n", __func__ ); )
+    FD_LOG_DEBUG(( "fd_quic_gen_initial_secret failed" ));
 
     /* shut down tls */
     fd_quic_tls_hs_delete( tls_hs );
@@ -3522,7 +3482,7 @@ fd_quic_connect( fd_quic_t * quic,
                            fd_quic_enc_level_initial_id, /* generate initial secrets */
                            suite->hash ) != FD_QUIC_SUCCESS ) {
     /* remove connection from map, and insert into free list */
-    DEBUG( fprintf( stderr, "%s: fd_quic_gen_secrets failed\n", __func__ ); )
+    FD_LOG_DEBUG(( "fd_quic_gen_secrets failed" ));
 
     /* shut down tls_hs */
     fd_quic_tls_hs_delete( tls_hs );
@@ -3549,7 +3509,7 @@ fd_quic_connect( fd_quic_t * quic,
                         conn->secrets.secret_sz[fd_quic_enc_level_initial_id][0] )
         != FD_QUIC_SUCCESS ) {
     /* remove connection from map, and insert into free list */
-    DEBUG( fprintf( stderr, "%s: fd_quic_gen_keys failed\n", __func__ ); )
+    FD_LOG_DEBUG(( "fd_quic_gen_keys failed" ));
 
     /* shut down tls_hs */
     fd_quic_tls_hs_delete( tls_hs );
@@ -3576,7 +3536,7 @@ fd_quic_connect( fd_quic_t * quic,
                         conn->secrets.secret_sz[fd_quic_enc_level_initial_id][1] )
         != FD_QUIC_SUCCESS ) {
     /* remove connection from map, and insert into free list */
-    DEBUG( fprintf( stderr, "%s: fd_quic_gen_keys failed\n", __func__ ); )
+    FD_LOG_DEBUG(( "fd_quic_gen_keys failed" ));
 
     /* shut down tls_hs */
     fd_quic_tls_hs_delete( tls_hs );
@@ -3609,14 +3569,14 @@ fd_quic_create_connection( fd_quic_t *               quic,
 
   /* check current number of connections */
   if( quic->cur_num_conns == quic->max_concur_conns ) {
-    DEBUG( printf( "%s : new connection would exceed max_concur_conns\n", __func__ ); )
+    FD_LOG_DEBUG(( "new connection would exceed max_concur_conns" ));
     return NULL;
   }
 
   /* fetch top of connection free list */
   fd_quic_conn_t * conn = quic->conns;
   if( conn == NULL ) { /* no free connections */
-    DEBUG( printf( "%s : no connections in free list\n", __func__ ); )
+    FD_LOG_DEBUG(( "no connections in free list" ));
     return NULL;
   }
 
@@ -4183,13 +4143,13 @@ fd_quic_frame_handle_stream_frame(
   (void)p;
   (void)p_sz;
 
-  DEBUG(
-      printf( "%s : fd_quic_frame_handle_stream_frame\n  **** ", __func__ );
-      for( ulong j = 0; j < p_sz; ++j ) {
-        printf( "%2.2x ", (uint)p[j] );
-      }
-      printf( "\n" );
-    )
+  //DEBUG(
+  //    printf( "%s : fd_quic_frame_handle_stream_frame\n  **** ", __func__ );
+  //    for( ulong j = 0; j < p_sz; ++j ) {
+  //      printf( "%2.2x ", (uint)p[j] );
+  //    }
+  //    printf( "\n" );
+  //  )
 
   fd_quic_frame_context_t context = *(fd_quic_frame_context_t*)vp_context;
 
@@ -4545,9 +4505,7 @@ fd_quic_frame_handle_conn_close_frame(
      frame type 0x1d means error at application layer
      TODO provide APP with this info */
   (void)context;
-  DEBUG(
-      printf( "%s : peer requested close\n", __func__ );
-      )
+  FD_LOG_DEBUG(( "peer requested close" ));
 
   switch( context.conn->state ) {
     case FD_QUIC_CONN_STATE_ABORT:

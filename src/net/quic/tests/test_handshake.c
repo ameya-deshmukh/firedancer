@@ -53,9 +53,8 @@ void
 my_hs_complete( fd_quic_tls_hs_t *           hs,
                 void *                       context ) {
   (void)hs;
-  (void)context;
 
-  printf( "In %s\n", __func__ );
+  FD_LOG_DEBUG(( "Callback" ));
 
   my_quic_tls_t * ctx = (my_quic_tls_t*)context;
   ctx->is_hs_complete = 1;
@@ -66,10 +65,9 @@ my_secrets( fd_quic_tls_hs_t *           hs,
             void *                       context,
             fd_quic_tls_secret_t const * secret ) {
   (void)hs;
-  (void)context;
   (void)secret;
 
-  printf( "In %s\n", __func__ );
+  FD_LOG_DEBUG(( "Callback" ));
 
   my_quic_tls_t * ctx = (my_quic_tls_t*)context;
   (void)ctx;
@@ -81,10 +79,11 @@ my_alert( fd_quic_tls_hs_t * hs,
           int                alert) {
   (void)hs;
   (void)context;
-  (void)alert;
 
-  printf( "In %s\n", __func__ );
-  printf( "Alert: %d %s %s\n", (int)alert, SSL_alert_type_string_long( alert ), SSL_alert_desc_string_long( alert ) );
+  FD_LOG_DEBUG(( "Callback" ));
+  FD_LOG_DEBUG(( "Alert: %d %s %s", (int)alert,
+                 SSL_alert_type_string_long( alert ),
+                 SSL_alert_desc_string_long( alert ) ));
 }
 
 int
@@ -93,7 +92,7 @@ my_client_hello( fd_quic_tls_hs_t * hs,
   (void)hs;
   (void)context;
 
-  printf( "In %s\n", __func__ );
+  FD_LOG_DEBUG(( "Callback" ));
   return FD_QUIC_TLS_SUCCESS;
 }
 
@@ -168,7 +167,7 @@ main( int     argc,
   FD_LOG_NOTICE(( "entering main handshake loop" ));
 
   for( int l = 0; l < 30; ++l ) {
-    printf( "start of handshake loop\n");
+    FD_LOG_NOTICE(( "start of handshake loop" ));
 
     int have_client_data = 0;
     int have_server_data = 0;
@@ -225,9 +224,9 @@ main( int     argc,
       }
       if( !hs_data ) break;
 
-      printf( "server hs_data: %p\n", (void*)hs_data );
+      FD_LOG_NOTICE(( "server hs_data: %p", (void*)hs_data ));
 
-      printf( "provide quic data server->client\n" );
+      FD_LOG_NOTICE(( "provide quic data server->client" ));
 
       // here we need encrypt/decrypt
       FD_TEST( fd_quic_tls_provide_data( hs_client, hs_data->enc_level, hs_data->data, hs_data->data_sz )!=FD_QUIC_TLS_FAILED );
@@ -262,19 +261,19 @@ main( int     argc,
     }
 
     if( tls_server->is_hs_complete && tls_client->is_hs_complete ) {
-      printf( "both handshakes complete\n" );
+      FD_LOG_NOTICE(( "both handshakes complete" ));
       if( have_server_data ) {
-        printf( "tls_server still has data\n" );
+        FD_LOG_NOTICE(( "tls_server still has data" ));
       }
 
       if( have_client_data ) {
-        printf( "tls_client still has data\n" );
+        FD_LOG_NOTICE(( "tls_client still has data" ));
       }
       if( !( have_server_data || have_client_data ) ) break;
     }
 
     if( !( have_server_data || have_client_data ) ) {
-      printf( "incomplete, but no more data to exchange\n" );
+      FD_LOG_NOTICE(( "incomplete, but no more data to exchange" ));
     }
 
   }

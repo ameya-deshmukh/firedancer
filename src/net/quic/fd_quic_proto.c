@@ -136,11 +136,11 @@ fd_quic_handle_pkt( fd_quic_t * quic, uchar const * buf, ulong buf_sz ) {
       case FD_QUIC_PKTTYPE_V1_INITIAL:
         return fd_quic_handle_initial_pkt( quic, buf, buf_sz );
       case FD_QUIC_PKTTYPE_V1_ZERO_RTT:
-        printf( "NOT IMPLEMENTED\n" ); break;
+        FD_LOG_WARNING(( "NOT IMPLEMENTED" )); break;
       case FD_QUIC_PKTTYPE_V1_HANDSHAKE:
-        printf( "NOT IMPLEMENTED\n" ); break;
+        FD_LOG_WARNING(( "NOT IMPLEMENTED" )); break;
       case FD_QUIC_PKTTYPE_V1_RETRY:
-        printf( "NOT IMPLEMENTED\n" ); break;
+        FD_LOG_WARNING(( "NOT IMPLEMENTED" )); break;
       default:
         return FD_QUIC_PARSE_FAIL;
     }
