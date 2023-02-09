@@ -26,7 +26,7 @@ Then, generate code.
 cd firedancer-sys
 
 # Build package
-MACHINE=linux_clang_x86_64 cargo build
+cargo build
 ```
 
 Note that you may see `bindgen` generate some warnings while generating code.
