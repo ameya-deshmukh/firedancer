@@ -8,6 +8,9 @@ on:
 jobs:
   make-test-coverage:
     runs-on: ubuntu-22.04
+    env:
+      MACHINE: linux_clang_native
+      EXTRAS: llvm-cov
     steps:
       - uses: actions/checkout@v3
 
@@ -21,22 +24,17 @@ jobs:
             parallel
 
       - name: Build everything
-        run: |
-          export MACHINE="linux_clang_x86_64"
-          export EXTRAS="llvm-cov"
-          make -j 
+        run: make -j
 
       - name: Run unit tests
         run: |
-          export LLVM_PROFILE_FILE="build/linux/clang/x86_64/tmp/coverage/%p.profraw"
-          export MACHINE="linux_clang_x86_64"
-          export EXTRAS="llvm-cov"
+          export LLVM_PROFILE_FILE="build/linux/clang/native/tmp/coverage/%p.profraw"
           make -kj --output-sync=target run-unit-test
 
       - name: Index raw coverage profiles
         run: |
           (
-            cd build/linux/clang/x86_64/tmp/coverage
+            cd build/linux/clang/native/tmp/coverage
             llvm-profdata-14 merge \
               -o coverage.profdata \
               *.profraw
@@ -44,7 +42,7 @@ jobs:
 
       - name: Export lcov profile
         run: |
-          BUILDDIR=build/linux/clang/x86_64
+          BUILDDIR=build/linux/clang/native
           llvm-cov-14 export \
             -format=lcov     \
             -instr-profile=$BUILDDIR/tmp/coverage/coverage.profdata             \

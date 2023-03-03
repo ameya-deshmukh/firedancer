@@ -8,6 +8,8 @@ on:
 jobs:
   make-test:
     runs-on: ubuntu-22.04
+    env:
+      MACHINE: linux_gcc_native
     steps:
       - uses: actions/checkout@v3
 

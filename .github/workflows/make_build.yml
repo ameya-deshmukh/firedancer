@@ -11,6 +11,8 @@ jobs:
       matrix:
         compiler: [gcc, clang]
     runs-on: ubuntu-22.04
+    env:
+      MACHINE: linux_${{ matrix.compiler }}_native
     steps:
       - uses: actions/checkout@v3
 
@@ -21,4 +23,4 @@ jobs:
             clang-15
 
       - name: Build everything
-        run: make -j MACHINE=linux_${{ matrix.compiler }}_x86_64
+        run: make -j
